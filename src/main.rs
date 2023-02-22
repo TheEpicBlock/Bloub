@@ -3,7 +3,7 @@
 
 mod math;
 
-use std::time::Instant;
+use std::{time::Instant, error::Error};
 
 use iter_tools::Itertools;
 use math::Vec2;
@@ -70,12 +70,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 *a = 0;
             }
         });
-
+    
     ball.set(window.outer_position().unwrap());
 
     event_loop.run(move |event, _, control_flow| {
         control_flow.set_wait();
-        ball.tick();
 
         match event {
             Event::WindowEvent {
@@ -87,7 +86,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 window_id,
             } if window_id == window.id() => ball.set(new_pos),
             Event::MainEventsCleared => {
-                // window.request_redraw();
+                window.request_redraw();
             }
             Event::RedrawRequested(_) => {
                 if let Err(err) = pixels.render() {
@@ -102,6 +101,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         input.handle(&window, &event);
         if input.mouse_down() {
             ball.move_ball(input.mouse_diff());
+        } else {
+            ball.tick(&window);
         }
         ball.update_window(&window);
     });
@@ -157,6 +158,7 @@ pub struct Ball {
     last_update: Pos,
     /// Measured in pixels
     radius: u32,
+    start_drag: Option<Pos>,
 }
 
 impl Ball {
@@ -168,27 +170,56 @@ impl Ball {
             last_update: Pos::new(f64::MIN, f64::MIN),
             velocity: Pos::zero(),
             last_tick: Instant::now(),
+            start_drag: None,
         }
     }
 
     fn set(&mut self, pos: impl Into<Pos>) {
-        let pos = pos.into();
-        println!("Set pos: {pos:?}");
-        self.pos = pos;
+        let pos = self.corner_to_center(pos.into());
+        // println!("Set pos: {pos:?}");
+        // self.pos = pos;
     }
 
     fn move_ball(&mut self, diff: impl Into<Pos>) {
-        self.pos += diff.into();
+        let diff = diff.into();
+        self.pos += diff;
+        self.last_tick = Instant::now();
+        match self.start_drag {
+            Some(mut x) => {
+                self.velocity = self.pos - x;
+                x += self.velocity * 0.3; // Slowly catch up the start pos
+            }
+            None => {
+                self.start_drag = Some(self.pos);
+            }
+        }
     }
 
-    fn tick(&mut self) {
+    fn tick(&mut self, window: &Window) -> Option<()> {
+        self.start_drag = None;
+        let bounds: Vec2<f64> = window.current_monitor()?.size().into();
         let current_time = Instant::now();
         let delta = current_time - self.last_tick;
-        self.velocity += Pos::new(0.0, -9.8) * SCALE;
+        self.velocity += Pos::new(0.0, 0.1); // Positive is down
+
+        let radius = self.radius as f64;
+        let new_y = self.pos.clone().y.clamp(radius, bounds.y-radius);
+        let new_x = self.pos.clone().x.clamp(radius, bounds.x-radius);
+
+        if new_y != self.pos.y {
+            self.pos.y = new_y;
+            self.velocity.y *= -0.6; // Boeing
+        }
+
+        if new_x != self.pos.x {
+            self.pos.x = new_x;
+            self.velocity.x *= -0.6;
+        }
 
         self.pos += self.velocity * delta.as_secs_f64();
-        println!("{:?}", self.pos);
         self.last_tick = current_time;
+
+        Some(())
     }
 
     fn size(&self) -> PhysicalSize<u32> {
@@ -197,8 +228,16 @@ impl Ball {
 
     fn update_window(&mut self, window: &Window) {
         if (self.pos - self.last_update).len() > 1.0 {
-            window.set_outer_position(Position::Physical(self.pos.into()));
+            window.set_outer_position(Position::Physical(self.center_to_corner(self.pos).into()));
             self.last_update = self.pos;
         }
+    }
+
+    fn center_to_corner(&self, pos: Pos) -> Pos {
+        pos - Pos::from(self.size())/2.0
+    }
+
+    fn corner_to_center(&self, pos: Pos) -> Pos {
+        pos + Pos::from(self.size())/2.0
     }
 }
