@@ -46,30 +46,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .clear_color(Color::TRANSPARENT)
             .build()?
     };
-
-    pixels
-        .get_frame_mut()
-        .iter_mut()
-        .array_chunks::<4>()
-        .enumerate()
-        .map(|(pos, pixel)| {
-            // Calculate coordinates
-            (Vec2::<i64>::new(pos as i64 / ball.size().width as i64, pos as i64 % ball.size().height as i64), pixel)
-        })
-        .for_each(|(pos, pixel)| {
-            let [r,g,b,a] = pixel;
-            let center = Vec2::<i64>::from(ball.size()) / 2;
-            let dist = (pos - center).len();
-
-            *r = 255;
-            *g = 255;
-            *b = 255;
-            if dist < ball.radius as f64 {
-                *a = 255;
-            } else {
-                *a = 0;
-            }
-        });
     
     ball.set(window.outer_position().unwrap());
 
@@ -97,6 +73,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 window.request_redraw();
             }
             Event::RedrawRequested(_) => {
+                draw(&mut pixels, &ball, &window);
                 if let Err(err) = pixels.render() {
                     println!("pixels.render() failed: {err}");
                     *control_flow = ControlFlow::Exit;
@@ -254,4 +231,34 @@ impl Ball {
     fn corner_to_center(&self, pos: Pos) -> Pos {
         pos + Pos::from(self.size())/2.0
     }
+}
+
+fn draw(pixels: &mut Pixels, ball: &Ball, window: &Window) {
+    pixels
+        .get_frame_mut()
+        .iter_mut()
+        .array_chunks::<4>()
+        .enumerate()
+        .map(|(pos, pixel)| {
+            // Calculate coordinates
+            (Vec2::<i64>::new(pos as i64 / ball.size().width as i64, pos as i64 % ball.size().height as i64), pixel)
+        })
+        .for_each(|(pos, pixel)| {
+            let [r,g,b,a] = pixel;
+            let center = Vec2::<i64>::from(ball.size()) / 2;
+            let dist = (pos - center).len()/ball.radius as f64;
+            let o = (ball.radius as f64 * 0.4) as i64;
+            let light_dir = (ball.pos - (window.current_monitor().map(|m| m.size().into()).unwrap_or(Vec2::zero())) * 0.33).flip_xy();
+            let offdist = (Vec2::<f64>::from(pos - center) + light_dir.map_length(|_| o as f64)).len()/ball.radius as f64;
+
+            let light = ((1.0-offdist)*100.0 + 150.0).clamp(0.0, 255.0) as u8;
+            *r = light;
+            *g = light;
+            *b = light;
+            if dist < 1.0 {
+                *a = 255;
+            } else {
+                *a = 0;
+            }
+        });
 }

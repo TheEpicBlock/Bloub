@@ -12,6 +12,10 @@ impl<T> Vec2<T> {
     pub fn new(x: T, y: T) -> Self {
         Vec2 { x, y }
     }
+
+    pub fn flip_xy(self) -> Self {
+        Vec2::new(self.y,self.x)
+    }
 }
 
 impl<T> Vec2<T> where T: From<u8> {
@@ -141,5 +145,14 @@ impl Vec2<f64> {
         let new_length = mapper(length);
         
         self / length * new_length
+    }
+}
+
+impl<T> Vec2<T> where T: Neg + Neg<Output = T>{
+    pub fn neg_y(self) -> Self {
+        Vec2::new(self.x, -self.y)
+    }
+    pub fn neg_x(self) -> Self {
+        Vec2::new(-self.x, self.y)
     }
 }
