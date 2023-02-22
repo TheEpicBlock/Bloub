@@ -197,7 +197,7 @@ impl Ball {
         match &mut self.start_drag {
             Some(x) => {
                 self.velocity = self.pos - *x;
-                *x += self.velocity * 0.9 * (now - self.last_tick).as_secs_f64(); // Slowly catch up the start pos
+                *x += self.velocity * 0.99 * (now - self.last_tick).as_secs_f64(); // Slowly catch up the start pos
                 self.velocity *= 4.0;
             }
             None => {
