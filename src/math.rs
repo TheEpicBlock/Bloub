@@ -134,3 +134,12 @@ impl Vec2<i64> {
         Vec2::<f64>::from(self.clone()).len()
     }
 }
+
+impl Vec2<f64> {
+    pub fn map_length(self, mapper: impl FnOnce(f64) -> f64) -> Self {
+        let length = self.len();
+        let new_length = mapper(length);
+        
+        self / length * new_length
+    }
+}

@@ -3,7 +3,7 @@
 
 mod math;
 
-use std::{time::Instant, error::Error};
+use std::{time::Instant, error::Error, f64::consts::PI};
 
 use iter_tools::Itertools;
 use math::Vec2;
@@ -85,6 +85,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 event: WindowEvent::Moved(new_pos),
                 window_id,
             } if window_id == window.id() => ball.set(new_pos),
+            Event::WindowEvent {
+                event: WindowEvent::MouseInput{ state, button, .. },
+                window_id,
+            } if window_id == window.id() => {
+                if button == MouseButton::Right && state == ElementState::Pressed {
+                    ball.velocity = (ball.pos - input.mouse).map_length(|m| (m/(ball.radius as f64)) * 30.0 * SCALE);
+                }
+            },
             Event::MainEventsCleared => {
                 window.request_redraw();
             }
