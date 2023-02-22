@@ -74,7 +74,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     ball.set(window.outer_position().unwrap());
 
     event_loop.run(move |event, _, control_flow| {
-        control_flow.set_wait();
+        // control_flow.set_wait();
 
         match event {
             Event::WindowEvent {
@@ -199,8 +199,8 @@ impl Ball {
         self.start_drag = None;
         let bounds: Vec2<f64> = window.current_monitor()?.size().into();
         let current_time = Instant::now();
-        let delta = current_time - self.last_tick;
-        self.velocity += Pos::new(0.0, 0.1); // Positive is down
+        let delta = (current_time - self.last_tick).as_secs_f64();
+        self.velocity += Pos::new(0.0, 9.8) * SCALE * delta; // Positive is down
 
         let radius = self.radius as f64;
         let new_y = self.pos.clone().y.clamp(radius, bounds.y-radius);
@@ -216,7 +216,9 @@ impl Ball {
             self.velocity.x *= -0.6;
         }
 
-        self.pos += self.velocity * delta.as_secs_f64();
+        self.velocity -= self.velocity * 0.05 * delta; // drag
+
+        self.pos += self.velocity * delta;
         self.last_tick = current_time;
 
         Some(())

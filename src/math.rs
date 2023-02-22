@@ -1,4 +1,4 @@
-use std::ops::{Add, Sub, Neg, Mul, AddAssign, SubAssign, Div};
+use std::ops::{Add, Sub, Neg, Mul, AddAssign, SubAssign, Div, MulAssign};
 
 use winit::dpi::{PhysicalPosition, PhysicalSize};
 
@@ -63,6 +63,13 @@ impl<T> Mul<T> for Vec2<T> where T: Mul + Copy {
 
     fn mul(self, rhs: T) -> Self::Output {
         Vec2::new(self.x*rhs, self.y*rhs)
+    }
+}
+
+impl<T> MulAssign<T> for Vec2<T> where T: MulAssign + Copy {
+    fn mul_assign(&mut self, rhs: T) {
+        self.x *= rhs;
+        self.y *= rhs;
     }
 }
 
