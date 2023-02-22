@@ -176,23 +176,27 @@ impl Ball {
 
     fn set(&mut self, pos: impl Into<Pos>) {
         let pos = self.corner_to_center(pos.into());
-        // println!("Set pos: {pos:?}");
-        // self.pos = pos;
+        if (pos - self.pos).len() > 5.0 {
+            // println!("Set pos: {pos:?}, {:?}", self.pos);
+            // self.pos = pos;
+        }
     }
 
     fn move_ball(&mut self, diff: impl Into<Pos>) {
         let diff = diff.into();
         self.pos += diff;
-        self.last_tick = Instant::now();
-        match self.start_drag {
-            Some(mut x) => {
-                self.velocity = self.pos - x;
-                x += self.velocity * 0.3; // Slowly catch up the start pos
+        let now = Instant::now();
+        match &mut self.start_drag {
+            Some(x) => {
+                self.velocity = self.pos - *x;
+                *x += self.velocity * 0.9 * (now - self.last_tick).as_secs_f64(); // Slowly catch up the start pos
+                self.velocity *= 4.0;
             }
             None => {
                 self.start_drag = Some(self.pos);
             }
         }
+        self.last_tick = now;
     }
 
     fn tick(&mut self, window: &Window) -> Option<()> {
