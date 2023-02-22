@@ -220,15 +220,15 @@ impl Ball {
 
         if new_y != self.pos.y {
             self.pos.y = new_y;
-            self.velocity.y *= -0.6; // Boeing
+            self.velocity.y *= -0.9; // Boeing
         }
 
         if new_x != self.pos.x {
             self.pos.x = new_x;
-            self.velocity.x *= -0.6;
+            self.velocity.x *= -0.9;
         }
 
-        self.velocity -= self.velocity * 0.05 * delta; // drag
+        self.velocity.x -= self.velocity.x * 0.05 * delta; // drag
 
         self.pos += self.velocity * delta;
         self.last_tick = current_time;
